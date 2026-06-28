@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xray 配置生成器</title>
+    <style>
+        :root {
+            --bg-gradient: radial-gradient(circle at top center, #161b26 0%, #0d1117 100%);
+            --body-bg: #0d1117;
+            --text-main: #e6edf3;
+            --text-muted: #8b949e;
+            --text-title: #f0f6fc;
+            --card-bg: rgba(22, 27, 34, 0.7);
+            --card-border: #30363d;
+            --card-hover-border: #444c56;
+            --input-bg: #0d1117;
+            --input-focus-bg: #12161f;
+            --input-border: #30363d;
+            --block-bg: rgba(13, 17, 23, 0.6);
+            --btn-secondary-bg: #21262d;
+            --btn-secondary-text: #c9d1d9;
+            --btn-secondary-border: #30363d;
+            --btn-secondary-hover: #30363d;
+            --cmd-box-bg: #090d13;
+            --cmd-box-border: #21262d;
+            --cmd-text: #79c0ff;
+            --shadow: rgba(0, 0, 0, 0.3);
+            
+            --primary-color: #238636;
+            --primary-hover: #2ea043;
+            --danger-text: #f85149;
+            --danger-bg: rgba(248, 81, 73, 0.1);
+            --danger-border: rgba(248, 81, 73, 0.2);
+            --danger-hover: #f85149;
+        }
+
+        [data-theme="light"] {
+            --bg-gradient: linear-gradient(180deg, #f6f8fa 0%, #ffffff 100%);
+            --body-bg: #ffffff;
+            --text-main: #24292f;
+            --text-muted: #57606a;
+            --text-title: #0969da;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-border: #d0d7de;
+            --card-hover-border: #858f99;
+            --input-bg: #f6f8fa;
+            --input-focus-bg: #ffffff;
+            --input-border: #d0d7de;
+            --block-bg: rgba(246, 248, 2fa, 0.8);
+            --btn-secondary-bg: #f6f8fa;
+            --btn-secondary-text: #24292f;
+            --btn-secondary-border: #d0d7de;
+            --btn-secondary-hover: #f3f4f6;
+            --cmd-box-bg: #afb8c133;
+            --cmd-box-border: #d0d7de;
+            --cmd-text: #0550ae;
+            --shadow: rgba(140, 149, 159, 0.15);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: var(--bg-gradient);
+            background-color: var(--body-bg);
+            color: var(--text-main); 
+            padding: 40px 20px; 
+            min-height: 100vh;
+            line-height: 1.5;
+            transition: background 0.3s, background-color 0.3s, color 0.3s;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; position: relative; }
+        
+        header { margin-bottom: 35px; text-align: center; }
+        h1 { 
+            font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; 
+            background: linear-gradient(90deg, #58a6ff, #bc8cff);
+            background-clip: text;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .subtitle { color: var(--text-muted); font-size: 14px; }
+
+        .top-controls { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 20px; }
+        .github-link {
+            display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
+            background: var(--btn-secondary-bg); border: 1px solid var(--btn-secondary-border);
+            color: var(--btn-secondary-text); text-decoration: none; font-size: 13px; font-weight: 500; transition: all 0.2s;
+        }
+        .github-link:hover { background: var(--btn-secondary-hover); border-color: var(--card-hover-border); }
+
+        /* 宽屏下并排流动 */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (min-width: 1100px) {
+            .cards-grid {
+                grid-template-columns: repeat(3, 1fr);
+                align-items: start;
+            }
+        }
+
+        .card { 
+            background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid var(--card-border); 
+            border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px var(--shadow); transition: all 0.3s ease;
+            height: 100%; 
+            margin-bottom: 0; 
+        }
+        .card-solo { margin-bottom: 24px; height: auto; }
+        
+        .card:hover { border-color: var(--card-hover-border); box-shadow: 0 10px 40px var(--shadow); }
+        .card h2 { font-size: 18px; font-weight: 600; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; color: var(--text-title); }
+        
+        .badge { font-size: 11px; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+        .badge-req { background: rgba(56, 139, 253, 0.15); color: #58a6ff; border: 1px solid rgba(56, 139, 253, 0.3); }
+        .badge-opt { background: rgba(188, 140, 255, 0.15); color: #bc8cff; border: 1px solid rgba(188, 140, 255, 0.3); }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
+        
+        .form-group input, .form-group select { 
+            width: 100%; padding: 10px 14px; background: var(--input-bg); border: 1px solid var(--input-border); 
+            border-radius: 8px; color: var(--text-main); font-size: 14px; transition: all 0.2s ease;
+        }
+        .form-group input:focus, .form-group select:focus { 
+            border-color: #58a6ff; outline: none; box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15); background: var(--input-focus-bg);
+        }
+        .form-group input.is-invalid {
+            border-color: var(--danger-text) !important; box-shadow: 0 0 0 3px rgba(248, 81, 73, 0.15) !important;
+        }
+
+        .input-group { display: flex; gap: 8px; }
+        .input-group input { flex: 1; }
+        .input-group .btn-action { padding: 0 14px; background: var(--btn-secondary-bg); border: 1px solid var(--btn-secondary-border); color: var(--text-main); border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 14px; }
+        .input-group .btn-action:hover { background: var(--btn-secondary-hover); border-color: var(--card-hover-border); }
+        
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; gap: 0; } }
+
+        .config-block { 
+            border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; margin-bottom: 16px; 
+            background: var(--block-bg); animation: fadeIn 0.3s ease;
+        }
+        .config-block .block-title { font-size: 14px; font-weight: 600; color: #58a6ff; display: flex; align-items: center; gap: 6px; }
+        
+        .btn { padding: 10px 20px; border: 1px solid transparent; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease; }
+        .btn-primary { background: var(--primary-color); color: #fff; }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-secondary { background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border-color: var(--btn-secondary-border); }
+        .btn-secondary:hover { background: var(--btn-secondary-hover); border-color: var(--card-hover-border); }
+        .btn-danger { background: var(--danger-bg); color: var(--danger-text); border-color: var(--danger-border); }
+        .btn-danger:hover { background: var(--danger-hover); color: #fff; }
+        .btn-add { background: transparent; color: #58a6ff; border: 1px dashed #388bfd; width: 100%; padding: 12px; border-radius: 12px; margin-top: 8px;}
+        .btn-add:hover { background: rgba(56, 139, 253, 0.08); }
+        .config-block .remove-btn { background: transparent; color: var(--danger-text); border: 1px solid transparent; border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+        .config-block .remove-btn:hover { background: var(--danger-bg); border-color: var(--danger-border); }
+
+        .param-group { display: none; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--card-border); }
+        .param-group.show { display: block; }
+        
+        .actions { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+        
+        .cmd-box { 
+            background: var(--cmd-box-bg); border: 1px solid var(--cmd-box-border); border-radius: 10px; padding: 20px; 
+            font-family: 'Fira Code', 'Courier New', monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; 
+            word-break: break-all; max-height: 500px; overflow-y: auto; color: var(--cmd-text); box-shadow: inset 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s ease;
+        }
+        .cmd-box .comment { color: #8b949e; font-style: italic; }
+        .cmd-box .cmd-sep { color: var(--card-border); display: block; margin: 8px 0; }
+        .cmd-box .cmd-number { color: #ff7b72; font-weight: bold; display: block; margin-top: 12px; }
+        
+        .flex-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="top-controls">
+        <button class="github-link" id="themeToggleBtn" onclick="toggleTheme()">🌓 切换亮色模式</button>
+        <a href="https://github.com/hellooe/xray-x" target="_blank" class="github-link">
+            <svg height="16" viewBox="0 0 16 16" width="16" style="fill: currentColor; vertical-align: middle;">
+                <path d="M8 0c4.42 0 8 3.58 8 8 0 3.54-2.29 6.53-5.47 7.59-.4.07-.55-.17-.55-.38 0-.19.01-.82.01-1.49 2.01.37 2.53-.49 2.69-.94.09-.23.48-.94.82-1.13.28-.15.68-.52.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+            </svg>
+            GitHub 仓库
+        </a>
+    </div>
+
+    <header>
+        <h1>🚀 Xray 配置生成器</h1>
+        <p class="subtitle">一个轻量级的 Xray 核心管理工具，如果对您有帮助，请点个 Star ⭐。</p>
+    </header>
+
+    <div class="card card-solo">
+        <h2>📦 Xray 管理 <span class="badge badge-req">基础内核操作</span></h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label>操作类型</label>
+                <select id="actionManage" onchange="autoSave()">
+                    <option value="">无动作（仅生成配置）</option>
+                    <option value="install">⚡ 安装 Xray 内核</option>
+                    <option value="update">🔄 更新 Xray 内核</option>
+                    <option value="uninstall">🗑️ 卸载 Xray 环境</option>
+                </select>
+            </div>
+            <div class="form-group" id="uninstallConfirmGroup" style="display:none;">
+                <label style="color:var(--danger-text);">⚠️ 确认卸载安全验证</label>
+                <select id="uninstallConfirm" onchange="autoSave()" style="border-color: rgba(248, 81, 73, 0.4);">
+                    <option value="">请选择以确认</option>
+                    <option value="yes">确认完全卸载</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="cards-grid">
+        <div class="card">
+            <h2>📥 入站配置 (Inbounds) <span class="badge badge-req">多实例</span></h2>
+            <div id="inboundList"></div>
+            <button class="btn btn-add" onclick="addInboundBlock(); autoSave();">➕ 添加全新入站规则</button>
+        </div>
+
+        <div class="card">
+            <h2>📤 出站配置 (Outbounds) <span class="badge badge-opt">节点代理</span></h2>
+            <div id="outboundList"></div>
+            <button class="btn btn-add" onclick="addOutboundBlock(); autoSave();">➕ 添加全新出站节点</button>
+        </div>
+
+        <div class="card">
+            <h2>🛣️ 路由分流 (Routing) <span class="badge badge-opt">高级分流</span></h2>
+            <div id="routeList"></div>
+            <button class="btn btn-add" onclick="addRouteBlock(); autoSave();">➕ 添加全新分流路由</button>
+        </div>
+    </div>
+
+    <div class="card card-solo" style="border-color: rgba(56, 139, 253, 0.4);">
+        <h2>📋 控制台输出终端 <span class="badge badge-req">安全沙盒</span></h2>
+        <div class="actions">
+            <button class="btn btn-primary" onclick="generateAllCmds()">🔄 生成全部指令</button>
+            <button class="btn btn-secondary" onclick="copyCmd('cmdAll')">📋 复制终端命令</button>
+            <button class="btn btn-danger" onclick="clearAllConfigs()">🗑️ 重置所有板块</button>
+        </div>
+        <div class="cmd-box" id="cmdAll"><span class="comment"># 终端就绪。请在上方完善配置后点击「生成全部指令」获取 Shell 脚本...</span></div>
+    </div>
+</div>
+
+<script>
+let inboundCount = 0, outboundCount = 0, routeCount = 0;
+let debounceTimer;
+
+function createUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+function fillUUID(targetSelector) {
+    document.querySelector(targetSelector).value = createUUID();
+    autoSave();
+}
+
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const toggleBtn = document.getElementById('themeToggleBtn');
+    if (currentTheme === 'light') {
+        document.documentElement.removeAttribute('data-theme');
+        toggleBtn.innerText = '🌓 切换亮色模式';
+    } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        toggleBtn.innerText = '🌓 切换深色模式';
+    }
+    autoSave();
+}
+
+function autoSave() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        const state = packState();
+        localStorage.setItem('xray_flow_state', JSON.stringify(state));
+    }, 400);
+}
+
+function packState() {
+    const state = {
+        theme: document.documentElement.getAttribute('data-theme') || 'dark',
+        actionManage: document.getElementById('actionManage').value,
+        inbounds: [], outbounds: [], routes: []
+    };
+    document.querySelectorAll('#inboundList .config-block').forEach(b => {
+        state.inbounds.push({
+            proto: b.querySelector('.inProto').value, port: b.querySelector('.inPort').value, uuid: b.querySelector('.inUuid').value,
+            dest: b.querySelector('.realityDest')?.value, domain: b.querySelector('.xhttpDomain')?.value, path: b.querySelector('.xhttpPath')?.value,
+            cfEmail: b.querySelector('.cfEmail')?.value, cfKey: b.querySelector('.cfGlobalKey')?.value, cfZone: b.querySelector('.cfZone')?.value
+        });
+    });
+    document.querySelectorAll('#outboundList .config-block').forEach(b => {
+        state.outbounds.push({
+            type: b.querySelector('.outType').value, tag: b.querySelector('.outTag').value,
+            vlessAddr: b.querySelector('.outVlessAddr')?.value, vlessPort: b.querySelector('.outVlessPort')?.value, vlessUuid: b.querySelector('.outVlessUuid')?.value,
+            serverName: b.querySelector('.outServerName')?.value, publicKey: b.querySelector('.outPublicKey')?.value, shortId: b.querySelector('.outShortId')?.value,
+            socksAddr: b.querySelector('.outSocksAddr')?.value, socksPort: b.querySelector('.outSocksPort')?.value, socksAuth: b.querySelector('.socksAuth')?.value,
+            socksUser: b.querySelector('.socksUser')?.value, socksPass: b.querySelector('.socksPass')?.value,
+            wgPrivacy: b.querySelector('.wgPrivateKey')?.value, wgAddr: b.querySelector('.wgAddress')?.value, wgEndpoint: b.querySelector('.wgEndpoint')?.value,
+            wgPub: b.querySelector('.wgPublicKey')?.value, wgReserve: b.querySelector('.wgReserved')?.value, wgStrategy: b.querySelector('.wgDomainStrategy')?.value
+        });
+    });
+    document.querySelectorAll('#routeList .config-block').forEach(b => {
+        state.routes.push({
+            name: b.querySelector('.routeName').value, outbound: b.querySelector('.routeOutbound').value,
+            domain: b.querySelector('.routeDomain').value, ip: b.querySelector('.routeIp').value,
+            port: b.querySelector('.routePort').value, network: b.querySelector('.routeNetwork').value
+        });
+    });
+    return state;
+}
+
+function unpackState(state) {
+    if (!state) return;
+    if (state.theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        document.getElementById('themeToggleBtn').innerText = '🌓 切换深色模式';
+    }
+    document.getElementById('actionManage').value = state.actionManage || '';
+    document.getElementById('uninstallConfirmGroup').style.display = (state.actionManage === 'uninstall') ? 'block' : 'none';
+    
+    document.getElementById('inboundList').innerHTML = '';
+    document.getElementById('outboundList').innerHTML = '';
+    document.getElementById('routeList').innerHTML = '';
+    
+    inboundCount = 0; outboundCount = 0; routeCount = 0;
+    
+    if(state.inbounds) state.inbounds.forEach(d => addInboundBlock(d));
+    if(state.outbounds) state.outbounds.forEach(d => addOutboundBlock(d));
+    if(state.routes) state.routes.forEach(d => addRouteBlock(d));
+}
+
+function addInboundBlock(d = null) {
+    const container = document.getElementById('inboundList');
+    const id = ++inboundCount;
+    const block = document.createElement('div');
+    block.className = 'config-block';
+    block.innerHTML = `
+        <div class="flex-between">
+            <span class="block-title">📥 入站 #${id}</span>
+            <button class="remove-btn" onclick="this.closest('.config-block').remove(); autoSave();">移除</button>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>入站协议</label>
+                <select class="inProto" onchange="const p=this.closest('.config-block'); p.querySelector('.inRealityParams').classList.toggle('show', this.value==='1'); p.querySelector('.inXhttpParams').classList.toggle('show', this.value==='3'); autoSave();">
+                    <option value="1">VLESS+TCP+Reality</option>
+                    <option value="2">VLESS+TCP+Post-Quantum</option>
+                    <option value="3">VLESS+XHTTP+TLS</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>入站监听端口</label>
+                <input type="number" class="inPort" value="${d?d.port:'443'}" oninput="autoSave()">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>用户凭证 UUID</label>
+            <div class="input-group">
+                <input type="text" class="inUuid" value="${d?d.uuid:''}" placeholder="留空自动分配 UUID" oninput="autoSave()">
+                <button class="btn-action" onclick="fillUUID('#inboundList .config-block[data-idx=\\'${id}\\'] .inUuid')">🎲</button>
+            </div>
+        </div>
+        <div class="param-group inRealityParams ${(!d || d.proto==='1')?'show':''}">
+            <div class="form-group">
+                <label>伪装域名 (Dest)</label>
+                <input type="text" class="realityDest" value="${d?d.dest:'www.bing.com'}" oninput="autoSave()">
+            </div>
+        </div>
+        <div class="param-group inXhttpParams ${(d && d.proto==='3')?'show':''}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>证书域名 (留空非 TLS)</label>
+                    <input type="text" class="xhttpDomain" value="${d?d.domain:''}" placeholder="example.com" oninput="autoSave()">
+                </div>
+                <div class="form-group">
+                    <label>Path 路径</label>
+                    <input type="text" class="xhttpPath" value="${d?d.path:'/api/'}" oninput="autoSave()">
+                </div>
+            </div>
+            <div class="form-group" style="background: rgba(140,149,159,0.05); padding: 14px; border-radius: 8px; border: 1px solid var(--card-border);">
+                <label style="color:#bc8cff; font-weight:600; margin-bottom:10px;">☁️ Cloudflare 增强</label>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>CF 注册邮箱</label>
+                        <input type="email" class="cfEmail" value="${d?d.cfEmail:''}" placeholder="user@example.com" oninput="autoSave()">
+                    </div>
+                    <div class="form-group">
+                        <label>Global API Key</label>
+                        <input type="password" class="cfGlobalKey" value="${d?d.cfKey:''}" placeholder="全局密钥" oninput="autoSave()">
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label>Zone ID</label>
+                    <input type="text" class="cfZone" value="${d?d.cfZone:''}" placeholder="Zone ID" oninput="autoSave()">
+                </div>
+            </div>
+        </div>
+    `;
+    block.setAttribute('data-idx', id);
+    if(d) block.querySelector('.inProto').value = d.proto;
+    container.appendChild(block);
+}
+
+function addOutboundBlock(d = null) {
+    const container = document.getElementById('outboundList');
+    const id = ++outboundCount;
+    const block = document.createElement('div');
+    block.className = 'config-block';
+    block.innerHTML = `
+        <div class="flex-between">
+            <span class="block-title">📤 出站 #${id}</span>
+            <button class="remove-btn" onclick="this.closest('.config-block').remove(); autoSave();">移除</button>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>出站协议</label>
+                <select class="outType" onchange="const p=this.closest('.config-block'); p.querySelector('.outVlessParams').classList.toggle('show', this.value==='1'); p.querySelector('.outSocksParams').classList.toggle('show', this.value==='2'); p.querySelector('.outWgParams').classList.toggle('show', this.value==='3'); autoSave();">
+                    <option value="1">VLESS+Reality</option>
+                    <option value="2">SOCKS5</option>
+                    <option value="3">WireGuard</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>出站标签</label>
+                <input type="text" class="outTag" value="${d?d.tag:''}" placeholder="留空分配唯一标识" oninput="autoSave()">
+            </div>
+        </div>
+        <div class="param-group outVlessParams ${(!d || d.type==='1')?'show':''}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>服务器公网 IP/Domain</label>
+                    <input type="text" class="outVlessAddr" value="${d?d.vlessAddr:''}" placeholder="1.2.3.4" oninput="autoSave()">
+                </div>
+                <div class="form-group">
+                    <label>连接端口</label>
+                    <input type="number" class="outVlessPort" value="${d?d.vlessPort:''}" placeholder="443" oninput="autoSave()">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>连接凭证 UUID</label>
+                <div class="input-group">
+                    <input type="text" class="outVlessUuid" value="${d?d.vlessUuid:''}" placeholder="UUID 密钥" oninput="autoSave()">
+                    <button class="btn-action" onclick="fillUUID('#outboundList .config-block[data-idx=\\'${id}\\'] .outVlessUuid')">🎲</button>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>serverName</label>
+                    <input type="text" class="outServerName" value="${d?d.serverName:''}" placeholder="example.com" oninput="autoSave()">
+                </div>
+                <div class="form-group">
+                    <label>publicKey</label>
+                    <input type="text" class="outPublicKey" value="${d?d.publicKey:''}" placeholder="公钥字符串" oninput="autoSave()">
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>shortId</label>
+                <input type="text" class="outShortId" value="${d?d.shortId:''}" placeholder="十六进制 shortId" oninput="autoSave()">
+            </div>
+        </div>
+        <div class="param-group outSocksParams ${(d && d.type==='2')?'show':''}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>SOCKS5 代理主机</label>
+                    <input type="text" class="outSocksAddr" value="${d?d.socksAddr:''}" placeholder="1.2.3.4" oninput="autoSave()">
+                </div>
+                <div class="form-group">
+                    <label>SOCKS5 端口</label>
+                    <input type="number" class="outSocksPort" value="${d?d.socksPort:''}" placeholder="1080" oninput="autoSave()">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>身份安全验证</label>
+                <select class="socksAuth" onchange="this.closest('.config-block').querySelector('.socksCreds').style.display = (this.value==='y')?'grid':'none'; autoSave();">
+                    <option value="n">匿名公开访问模式</option>
+                    <option value="y">启用账号密码认证</option>
+                </select>
+            </div>
+            <div class="form-row socksCreds" style="${(d && d.socksAuth==='y')?'display:grid;':'display:none;'}">
+                <div class="form-group">
+                    <label>连接用户名</label>
+                    <input type="text" class="socksUser" value="${d?d.socksUser:''}" placeholder="admin" oninput="autoSave()">
+                </div>
+                <div class="form-group">
+                    <label>认证密码</label>
+                    <input type="password" class="socksPass" value="${d?d.socksPass:''}" placeholder="******" oninput="autoSave()">
+                </div>
+            </div>
+        </div>
+        <div class="param-group outWgParams ${(d && d.type==='3')?'show':''}">
+            <div class="form-group">
+                <label>WireGuard 私有密钥 (PrivateKey)</label>
+                <input type="text" class="wgPrivateKey" value="${d?d.wgPrivacy:''}" placeholder="本地私钥" oninput="autoSave()">
+            </div>
+            <div class="form-group">
+                <label>内网本地分配 IP 地址</label>
+                <input type="text" class="wgAddress" value="${d?d.wgAddr:'172.16.0.2/32'}" oninput="autoSave()">
+            </div>
+            <div class="form-group">
+                <label>隧道网关端点 (Endpoint Host:Port)</label>
+                <input type="text" class="wgEndpoint" value="${d?d.wgEndpoint:'engage.cloudflareclient.com:2408'}" oninput="autoSave()">
+            </div>
+            <div class="form-group">
+                <label>隧道公钥认证 (Peer PublicKey)</label>
+                <input type="text" class="wgPublicKey" value="${d?d.wgPub:'bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo='}" oninput="autoSave()">
+            </div>
+            <div class="form-group">
+                <label>保留序列字段 (Reserved)</label>
+                <input type="text" class="wgReserved" value="${d?d.wgReserve:''}" placeholder="0,0,0" oninput="autoSave()">
+            </div>
+            <div class="form-group">
+                <label>DNS解析策略 (DomainStrategy)</label>
+                <select class="wgDomainStrategy" onchange="autoSave()">
+                    <option value="ForceIPv6v4">ForceIPv6v4 (优先V6)</option>
+                    <option value="ForceIPv6">ForceIPv6 (仅限V6)</option>
+                    <option value="ForceIPv4v6">ForceIPv4v6 (优先V4)</option>
+                    <option value="ForceIPv4">ForceIPv4 (仅限V4)</option>
+                </select>
+            </div>
+        </div>
+    `;
+    block.setAttribute('data-idx', id);
+    if(d) {
+        block.querySelector('.outType').value = d.type;
+        block.querySelector('.socksAuth').value = d.socksAuth || 'n';
+        block.querySelector('.wgDomainStrategy').value = d.wgStrategy || 'ForceIPv4';
+    }
+    container.appendChild(block);
+}
+
+function addRouteBlock(d = null) {
+    const container = document.getElementById('routeList');
+    const id = ++routeCount;
+    const block = document.createElement('div');
+    block.className = 'config-block';
+    block.innerHTML = `
+        <div class="flex-between">
+            <span class="block-title">🛣️ 路由 #${id}</span>
+            <button class="remove-btn" onclick="this.closest('.config-block').remove(); autoSave();">移除</button>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>规则路由集别名 (Name)</label>
+                <input type="text" class="routeName" value="${d?d.name:''}" placeholder="如 proxy-rule" oninput="autoSave()">
+            </div>
+            <div class="form-group">
+                <label>匹配出站 Tag</label>
+                <input type="text" class="routeOutbound" value="${d?d.outbound:''}" placeholder="对应出站的 Tag" oninput="autoSave()">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>域名匹配</label>
+                <input type="text" class="routeDomain" value="${d?d.domain:''}" placeholder="domain:google.com, geosite:cn" oninput="autoSave()">
+            </div>
+            <div class="form-group">
+                <label>IP/CIDR 匹配</label>
+                <input type="text" class="routeIp" value="${d?d.ip:''}" placeholder="1.1.1.1/32, geoip:cn" oninput="autoSave()">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group" style="margin-bottom:0;">
+                <label>端口匹配 (localPort)</label>
+                <input type="text" class="routePort" value="${d?d.port:''}" placeholder="80, 443" oninput="autoSave()">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label>网络传输协议</label>
+                <input type="text" class="routeNetwork" value="${d?d.network:''}" placeholder="tcp, udp" oninput="autoSave()">
+            </div>
+        </div>
+    `;
+    container.appendChild(block);
+}
+
+function validateInputs() {
+    let isValid = true;
+    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+    document.querySelectorAll('#inboundList .config-block').forEach(b => {
+        const portEl = b.querySelector('.inPort');
+        const val = parseInt(portEl.value);
+        if (isNaN(val) || val < 1 || val > 65535) {
+            portEl.classList.add('is-invalid');
+            isValid = false;
+        }
+    });
+
+    document.querySelectorAll('#outboundList .config-block').forEach(b => {
+        const type = b.querySelector('.outType').value;
+        if(type === '1') {
+            ['.outVlessAddr', '.outVlessPort', '.outVlessUuid', '.outServerName', '.outPublicKey', '.outShortId'].forEach(s => {
+                const el = b.querySelector(s);
+                if(!el.value.trim()) { el.classList.add('is-invalid'); isValid = false; }
+            });
+        } else if (type === '2') {
+            ['.outSocksAddr', '.outSocksPort'].forEach(s => {
+                const el = b.querySelector(s);
+                if(!el.value.trim()) { el.classList.add('is-invalid'); isValid = false; }
+            });
+            if(b.querySelector('.socksAuth').value === 'y') {
+                ['.socksUser', '.socksPass'].forEach(s => {
+                    const el = b.querySelector(s);
+                    if(!el.value.trim()) { el.classList.add('is-invalid'); isValid = false; }
+                });
+            }
+        } else if (type === '3') {
+            ['.wgPrivateKey', '.wgAddress', '.wgEndpoint'].forEach(s => {
+                const el = b.querySelector(s);
+                if(!el.value.trim()) { el.classList.add('is-invalid'); isValid = false; }
+            });
+        }
+    });
+
+    document.querySelectorAll('#routeList .config-block').forEach(b => {
+        ['.routeName', '.routeOutbound'].forEach(s => {
+            const el = b.querySelector(s);
+            if(!el.value.trim()) { el.classList.add('is-invalid'); isValid = false; }
+        });
+    });
+
+    return isValid;
+}
+
+function buildCommand(env) {
+    let cmd = '';
+    for (const [k, v] of Object.entries(env)) {
+        cmd += `${k}='${v}' \\\n`;
+    }
+    cmd += `bash <(curl -Ls https://raw.githubusercontent.com/hellooe/xray-x/refs/heads/master/xr.sh)`;
+    return cmd;
+}
+
+function generateAllCmds() {
+    const output = document.getElementById('cmdAll');
+    if (!validateInputs()) {
+        output.innerHTML = '<span class="comment"># ❌ 校验错误：检测到关键表单项数据格式异常或不完整，高亮红框标记已激活，请修正后重新生成。</span>';
+        return;
+    }
+
+    let allEnvs = [];
+    
+    const action = document.getElementById('actionManage').value;
+    if(action) {
+        let env = { ACTION: action };
+        if(action === 'uninstall' && document.getElementById('uninstallConfirm').value === 'yes') {
+            env.UNINSTALL_CONFIRM = 'yes';
+        }
+        allEnvs.push(env);
+    }
+
+    document.querySelectorAll('#inboundList .config-block').forEach(b => {
+        let proto = b.querySelector('.inProto').value;
+        let env = { ACTION: 'add_inbound', INBOUND_PROTO: proto, INBOUND_PORT: b.querySelector('.inPort').value.trim() };
+        if(b.querySelector('.inUuid').value.trim()) env.INBOUND_UUID = b.querySelector('.inUuid').value.trim();
+        
+        if (proto === '1') env.REALITY_DEST = b.querySelector('.realityDest').value.trim();
+        else if (proto === '3') {
+            if(b.querySelector('.xhttpDomain').value.trim()) env.DOMAIN = b.querySelector('.xhttpDomain').value.trim();
+            env.XHTTP_PATH = b.querySelector('.xhttpPath').value.trim();
+            if(b.querySelector('.cfEmail').value.trim() && b.querySelector('.cfGlobalKey').value.trim()) {
+                env.CF_ENABLE = 'y';
+                env.CF_EMAIL = b.querySelector('.cfEmail').value.trim();
+                env.CF_GLOBAL_KEY = b.querySelector('.cfGlobalKey').value.trim();
+                env.CF_ZONE_ID = b.querySelector('.cfZone').value.trim();
+            }
+        }
+        allEnvs.push(env);
+    });
+
+    document.querySelectorAll('#outboundList .config-block').forEach(b => {
+        let type = b.querySelector('.outType').value;
+        let tag = b.querySelector('.outTag').value.trim() || 'outbound-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+        let env = { ACTION: 'add_outbound', OUTBOUND_TYPE: type, OUTBOUND_TAG: tag };
+        
+        if(type === '1') {
+            env.OUTBOUND_ADDRESS = b.querySelector('.outVlessAddr').value.trim();
+            env.OUTBOUND_PORT = b.querySelector('.outVlessPort').value.trim();
+            env.OUTBOUND_UUID = b.querySelector('.outVlessUuid').value.trim();
+            env.OUTBOUND_SERVERNAME = b.querySelector('.outServerName').value.trim();
+            env.OUTBOUND_PUBLICKEY = b.querySelector('.outPublicKey').value.trim();
+            env.OUTBOUND_SHORTID = b.querySelector('.outShortId').value.trim();
+        } else if (type === '2') {
+            env.OUTBOUND_ADDRESS = b.querySelector('.outSocksAddr').value.trim();
+            env.OUTBOUND_PORT = b.querySelector('.outSocksPort').value.trim();
+            if(b.querySelector('.socksAuth').value === 'y') {
+                env.SOCKS_AUTH = 'y';
+                env.SOCKS_USER = b.querySelector('.socksUser').value.trim();
+                env.SOCKS_PASS = b.querySelector('.socksPass').value.trim();
+            }
+        } else if (type === '3') {
+            env.WG_PRIVATE_KEY = b.querySelector('.wgPrivateKey').value.trim();
+            env.WG_ADDRESS = b.querySelector('.wgAddress').value.trim();
+            env.WG_ENDPOINT = b.querySelector('.wgEndpoint').value.trim();
+            env.WG_PUBLIC_KEY = b.querySelector('.wgPublicKey').value.trim();
+            if(b.querySelector('.wgReserved').value.trim()) env.WG_RESERVED = b.querySelector('.wgReserved').value.trim();
+            env.WG_DOMAIN_STRATEGY = b.querySelector('.wgDomainStrategy').value;
+        }
+        allEnvs.push(env);
+    });
+
+    document.querySelectorAll('#routeList .config-block').forEach(b => {
+        let env = { ACTION: 'add_route', ROUTE_NAME: b.querySelector('.routeName').value.trim(), ROUTE_OUTBOUND: b.querySelector('.routeOutbound').value.trim() };
+        if(b.querySelector('.routeDomain').value.trim()) env.ROUTE_DOMAIN = b.querySelector('.routeDomain').value.trim();
+        if(b.querySelector('.routeIp').value.trim()) env.ROUTE_IP = b.querySelector('.routeIp').value.trim();
+        if(b.querySelector('.routePort').value.trim()) env.ROUTE_PORT = b.querySelector('.routePort').value.trim();
+        if(b.querySelector('.routeNetwork').value.trim()) env.ROUTE_NETWORK = b.querySelector('.routeNetwork').value.trim();
+        allEnvs.push(env);
+    });
+
+    if (allEnvs.length === 0) {
+        output.innerHTML = '<span class="comment"># ⚠️ 当前无活跃任务卡片，请至少填充添加一类环境或协议组件。</span>';
+        return;
+    }
+
+    let html = '';
+    allEnvs.forEach((env, idx) => {
+        html += buildCommand(env);
+        if (idx < allEnvs.length - 1) html += '<span class="cmd-sep"># ----------------------------------------------------</span>';
+    });
+    output.innerHTML = html;
+}
+
+function copyCmd(elementId) {
+    const text = document.getElementById(elementId).innerText;
+    if(text.includes('终端就绪') || text.includes('已清空') || text.includes('调度中止')) {
+        alert('❌ 终端当前不存在可以下发的可执行脚本代码');
+        return;
+    }
+    navigator.clipboard.writeText(text).then(() => alert('✅ 配置命令已成功复制！'));
+}
+
+function clearAllConfigs() {
+    if (!confirm('🚨 安全警告：此操作将清空本地所有配置，确定重置？')) return;
+    localStorage.removeItem('xray_flow_state');
+    document.getElementById('inboundList').innerHTML = '';
+    document.getElementById('outboundList').innerHTML = '';
+    document.getElementById('routeList').innerHTML = '';
+    document.getElementById('actionManage').value = '';
+    document.getElementById('uninstallConfirmGroup').style.display = 'none';
+    document.getElementById('cmdAll').innerHTML = '<span class="comment"># 已清空所有本地缓存。请重新配置以开始。</span>';
+    inboundCount = 0; outboundCount = 0; routeCount = 0;
+}
+
+document.getElementById('actionManage').addEventListener('change', function() {
+    document.getElementById('uninstallConfirmGroup').style.display = (this.value === 'uninstall') ? 'block' : 'none';
+});
+
+window.onload = function() {
+    const localCache = localStorage.getItem('xray_flow_state');
+    if (localCache) {
+        try {
+            unpackState(JSON.parse(localCache));
+        } catch(e) {
+            loadDefaults();
+        }
+    } else {
+        loadDefaults();
+    }
+};
+
+function loadDefaults() {
+    addInboundBlock();
+    addOutboundBlock();
+    addRouteBlock();
+}
+</script>
+</body>
+</html>
